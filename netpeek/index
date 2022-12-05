@@ -1,0 +1,187 @@
+#!/usr/bin/perl
+# by jackg - Jack Gallagher
+#
+use strict;
+
+print "Content-type: text/html\n\n<html><body>";
+print "<title> Network WebApps </title>";
+print  "<head><meta http-equiv=\"refresh\" content=\"360\"></head>\n";
+print "<body bgcolor=\"bbbbbb\">";
+
+use FindBin qw($Bin);
+my $installpath = $Bin;
+$installpath =~ s/\/$//;
+
+use CGI;
+my $in = CGI->new;
+
+use DBI;
+require "$installpath/lib/dbipw.pl";
+my ($h,$u,$p) = dbigrabit("server1");
+#my ($h,$u,$p) = dbigrabit();
+print "$h<br>";
+my $dbh = DBI->connect("DBI:mysql:host=$h",$u,$p,{RaiseError => 1});
+
+push @INC,"$installpath/lib";
+require "servers.pl";
+my $admin       = admin();
+my $nuser       = network();
+my $domain      = dnssuffix();
+my $webcgi      = webcgi();
+my $weburl      = weburl();
+my $siteurl     = siteurl();
+my $reachdata   = deptdata();
+my $changevlans = changevlans();
+
+########## LOCAL AUTH CODE ############################################
+require "$installpath/lib/auth.pl";
+if (-f $reachdata)  { require "$reachdata"; }
+use vars qw(%network_staff %noc_staff %security_staff %systems_staff %reachhash %forum );
+my $host = $ENV{REMOTE_ADDR} || "host unknown";
+my %auth = (%network_staff , %noc_staff , %security_staff, %systems_staff);
+my $netid = $ENV{REMOTE_USER} || "no user specified";
+$netid =~ s/\/tacacs//;
+if (exists $auth{$netid})  {  print "netid '$netid' connecting from $host <br><br>\n";  }
+else {
+   print "<body bgcolor=red><br><br><h2><b><font color=green>User Authorization Failure</font></b><br><br>";
+   print "<b> Use of this page by $netid not authorized. <br><br>";
+   print "Please contact <a href=\"mailto:$nuser\@$domain\">$nuser\@$domain</a></b>\n";
+   exit;
+}
+#######################################################################
+
+print "<a name=\"TOP\"> </a>";
+print "<h3> Network WebApps </h3>";
+my $blank = "target = \"_blank\"";
+
+my $nfnets;
+my $query = "SELECT distinct(network) FROM network.nofree_dhcp";
+my $select_h  = $dbh->prepare($query);
+my $recs = $select_h->execute();
+if ($recs != 0) {
+   my $sel_ary = $select_h->fetchall_arrayref;
+   $nfnets = scalar(@$sel_ary);
+}
+print "Currently ";
+if ($nfnets == 1) { print "<a href=\"#NOFREE\"> $nfnets network has </a>"; }
+else  { print "<a href=\"#NOFREE\"> $nfnets networks have </a>"; }
+print " reported no free leases in recent cycles<br>";
+
+my $mfsw = 0;
+my $query = "SELECT distinct(switch) FROM network.macflap";
+my $select_h  = $dbh->prepare($query);
+my $recs = $select_h->execute();
+if ($recs != 0) {
+   my $sel_ary = $select_h->fetchall_arrayref;
+   $mfsw = scalar(@$sel_ary);
+}
+print "Currently ";
+if ($nfnets == 1) { print "<a href=\"#MACFLAP\"> $mfsw network has </a>"; }
+else  { print "<a href=\"#MACFLAP\"> $mfsw networks have </a>"; }
+print " reported a macflap in recent cycles<br>";
+
+
+print <<EOF;
+<br>
+<a HREF=https://$webcgi/netpeek/netpeek.cgi $blank> netpeek </a> - Network search utility.  <br>
+<a HREF=https://$webcgi/netpeek/sw.cgi $blank> switchmeister </a> - Switchport/Mac utility.  <br>
+<a HREF=https://$webcgi/netpeek/macfilter.cgi $blank> macfilter </a>- mac-address-based filtering utility on routers <br>
+<a HREF=https://$webcgi/netpeek/swmacfilter.cgi $blank> swmacfilter </a>- mac-address-based filtering utility on switches <br>
+<a HREF=https://$webcgi/netpeek/borderfilter.cgi $blank> borderfilter </a> - filtering utility for border router issues <br>
+<a HREF=https://$webcgi/netpeek/find_dhcp.cgi $blank> find_dhcp </a>- used to figure out IP fixies, statics, ranges, etc.<br>
+<a HREF=https://$webcgi/netpeek/vlanmap.cgi $blank> vlanmap </a> - Vlans info: vlan number, source router/fw, state, dhcp server, descriptions <br>
+<a HREF=https://$webcgi/netpeek/iproutes.cgi $blank> iproutes </a> - Routes Internal and Connected <br> 
+<a HREF=https://$webcgi/maps.cgi $blank> maps </a> - Building maps <br>
+<br>
+EOF
+
+print <<EOF;
+<a HREF=https://$webcgi/netpeek/PhoneMoves.cgi $blank> PhoneMoves </a> - Utility for tracking VoIP phone moves and installs.  <br>
+<a HREF=https://$webcgi/netpeek/switch_lastconnect.cgi $blank> switch_lastconnect</a> - Last time a switch connected by script (swmisc.pl) oldest first </br>
+<a HREF=https://$webcgi/netpeek/switch_noconnect.cgi $blank> switch_noconnect</a> - Switches that have failed to connected in the past seven days by date </br>
+<a href=https://$webcgi/netpeek/chvlan.cgi $blank> Forum vlan </a> - change vlans in the Forum - mostly for the REACH staff there <br>
+<a href=https://$webcgi/swcdptree.cgi $blank> swcdptree </a> - display cdp tree - switches only.<br>
+<a href=https://$webcgi/cdptree.cgi $blank> cdptree </a> - display cdp tree with phones, APs, etc.<br>
+<a HREF=https://$webcgi/swversion.cgi $blank> swversion </a> - IOS version, reboot time, model number, serial number of all Cisco switches from above ping test. <br>
+<a HREF=https://$webcgi/swvreport.cgi $blank> swvreport</a> - Generate a CSV of switch model versus building rubric. (from swversion)</br>
+<a href=https://$webcgi/smf.cgi $blank> smf </a> - <b> singlemode fiber </b> documentation script <br>
+<a href=https://$webcgi/mmf.cgi $blank> mmf </a> - <b> multimode fiber </b> documentation script <br>
+<a href=https://$webcgi/50mmf.cgi $blank> 50mmf </a> - <b> 50 micron (OM3/4) multimode fiber </b> documentation script <br>
+<br>
+<a HREF=https://$webcgi/netpeek/errdis.cgi $blank> errdis </a> - show all err-disabled switch ports currently reachable <br> 
+<a HREF=https://$webcgi/netpeek/reapmac_count.cgi $blank> reapmac_count </a> - mac addresses last updated as of date (patience: 30-60 seconds) <br> 
+<a HREF=https://$webcgi/netpeek/pingableswitches.cgi $blank> pingableswitches </a> - All switches that answered to the last round of pings <br> 
+<a HREF=https://$webcgi/netpeek/pingablevgs.cgi $blank> pingablevgs </a> - All VGs that answered to the last round of pings <br> 
+<a HREF=https://$webcgi/roguedev.cgi $blank> rogue devices </a> - show all local possible rogue devices currently found on network <br> 
+<a HREF=https://$webcgi/patcount.cgi $blank> PAT counts graph </a> - Graphs per PAT address for the last year (up to yesterday)<br> 
+<a HREF=https://$webcgi/netpeek/allmacfilters.cgi $blank> allmacfilters </a> - search and display all current macfilters from all routers <br> 
+<a HREF=https://$webcgi/netpeek/allswmacfilters.cgi $blank> allswmacfilters </a> - search and display all current switch macfilters <br> 
+<a HREF=https://$webcgi/netpeek/multivoip.cgi $blank> multivoip </a> - show switch ports with multiple voip phones <br> 
+<br>
+EOF
+
+print "<hr>";
+
+print "<em> <a HREF=\"mailto:$nuser\@$domain\"> ";
+print "email me </a> </em> if anything is missing off this menu, or if anything is just plain off... <br>\n";
+print "<hr>";
+#print "<br>";
+
+## No Free Leases
+print "<a name=\"NOFREE\"> </a>"; 
+print "<h3> Networks/Mac addresses recently receiving 'no free lease' response from dhcp server </h3>\n";
+my $query = "select * from network.nofree_dhcp order by tstamp desc";
+my $select_h  = $dbh->prepare($query);
+my $recs = $select_h->execute();
+if ($recs != 0) {
+   my $sel_ary = $select_h->fetchall_arrayref;
+   my $nethash;
+   foreach my $row (@$sel_ary)  {
+      my ($mac,$network,$tstamp) = @$row;
+      $nethash->{$network} += 1;
+   }
+   print "<table>";
+   foreach my $n (keys %$nethash)  {
+      print "<tr><td><b> $n </b> &nbsp;&nbsp; </td>  <td><b>", $nethash->{$n};
+      if ($nethash->{$n} == 1)  {  print "</b></td>  <td> mac address </td></tr>\n"; }
+      else                      {  print "</b></td>  <td> mac addresses </td></tr>\n"; }
+
+   }  
+   print "</table>";
+   print "<br>";
+   
+   print "<table border=5>";
+   print "<th> mac </th> <th> network </th> <th> tstamp </th>"; 
+   foreach my $row (sort @$sel_ary)  {
+      my ($mac,$network,$tstamp) = @$row;
+      print "<tr><td><a href=\"https://$webcgi/netpeek/netpeek.cgi?submit=Submit&oper=query_mac&mac=$mac\" $blank > $mac </a></td><td> $network </td><td> $tstamp </td></tr>";
+   }
+   print "</table>";
+}
+print "<br>";
+
+## MacFlaps  (hamburger pancakes at Mickey D's?)
+print "<a name=\"MACFLAP\"> </a>";
+print "<h3> MACFLAP events recently received </h3>\n";
+my $query = "select * from network.macflap order by tstamp desc";
+my $select_h  = $dbh->prepare($query);
+my $recs = $select_h->execute();
+if ($recs != 0) {
+   my $sel_ary = $select_h->fetchall_arrayref;
+   print "<table border=5>";
+   ## | mac            | vlan | switch          | port1  | port2  | tstamp  
+   print "<th> mac </th> <th> vlan </th> <th> switch </th> <th> port1 </th> <th> port2 </th> <th> tstamp </th> ";
+   foreach my $row (sort @$sel_ary)  {
+      my ($mac,$vlan,$switch,$port1,$port2,$tstamp) = @$row;
+      print "<tr> <td> $mac </td> <td> $vlan </td> <td> $switch </td> <td> $port1 </td> <td> $port2 </td> <td> $tstamp </td> </tr>";
+   }
+   print "</table>";
+   print "<br>";
+}
+print "<a href=\"#TOP\"> Back to the top </a>";
+print "<br><br>";
+
+exit;
+
+#########################################
+

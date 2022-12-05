@@ -1,0 +1,365 @@
+##########
+arp
+
+= SystemEvents:
+CREATE TABLE arp.SystemEvents (Message text NOT NULL, Facility smallint(6) NOT NULL, FromHost varchar(60) NOT NULL, Priority smallint(6) NOT NULL, DeviceReportedTime datetime NOT NULL, ReceivedAt datetime NOT NULL, InfoUnitID int(11) NOT NULL, SysLogTag varchar(60) NOT NULL);
+
+= cdp:
+CREATE TABLE arp.cdp (swip varchar(30) NOT NULL, swname varchar(48) NOT NULL, localPort varchar(30) NOT NULL, remoteDeviceID varchar(30) NOT NULL, remoteIP varchar(30) NOT NULL, remotePort varchar(30) NOT NULL, platform varchar(30) NOT NULL, version varchar(30) NOT NULL, capabilities varchar(30) NOT NULL, VTPdomain varchar(30) NOT NULL, powerDrawn varchar(30) NOT NULL, powerRequest varchar(48) NOT NULL, tstamp timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP);
+ALTER TABLE cdp ADD INDEX (swip);
+ALTER TABLE cdp ADD INDEX (swname);
+ALTER TABLE cdp ADD INDEX (platform);
+
+= filter:
+CREATE TABLE arp.filter (dateQ datetime NOT NULL DEFAULT 0000-00-00 00:00:00, datefilt datetime NOT NULL DEFAULT 0000-00-00 00:00:00, operation varchar(10) NOT NULL, type char(3) NOT NULL, mac varchar(48) NOT NULL, pub_ip varchar(20) NOT NULL, priv_ip varchar(20) NOT NULL, vlan varchar(20) NOT NULL, router varchar(20) NOT NULL, number varchar(12) NOT NULL, who varchar(20) NOT NULL, comment varchar(255) NOT NULL);
+
+= filterQ:
+CREATE TABLE arp.filterQ (address varchar(48) NOT NULL, operation varchar(20) NOT NULL, dateQ datetime NOT NULL DEFAULT 0000-00-00 00:00:00, user varchar(30) NOT NULL, number varchar(12) NOT NULL, comment varchar(255) NOT NULL);
+
+= filter_exclude:
+CREATE TABLE arp.filter_exclude (ip varchar(48) NOT NULL, primary key(ip) );
+
+= ipfilters:
+CREATE TABLE arp.ipfilters (ip varchar(48) NOT NULL, router varchar(48) NOT NULL, alist varchar(48) NOT NULL);
+
+= macaddr:
+CREATE TABLE arp.macaddr (mac varchar(30) NOT NULL, vlan varchar(20) NOT NULL, router varchar(20) NOT NULL, birth varchar(30) NOT NULL, recent varchar(30) NOT NULL, dropped varchar(10) NOT NULL, primary_mac char(3) NOT NULL, primary key(mac,vlan,router) );
+
+= macfilters:
+CREATE TABLE arp.macfilters (mac varchar(48) NOT NULL, router varchar(48) NOT NULL, vlan varchar(48) NOT NULL, primary key(mac,router,vlan) );
+
+= reapIP:
+CREATE TABLE arp.reapIP (ip varchar(30) NOT NULL, mac varchar(30) NOT NULL, recent varchar(30) NOT NULL, router varchar(30) NOT NULL, vlan varchar(30) NOT NULL, primary key(ip) );
+ALTER TABLE reapIP ADD INDEX (mac);
+ALTER TABLE reapIP ADD INDEX (vlan);
+
+= reapIP_pre2015:
+CREATE TABLE arp.reapIP_pre2015 (ip varchar(30) NOT NULL, mac varchar(30) NOT NULL, recent varchar(30) NOT NULL, router varchar(30) NOT NULL, vlan varchar(30) NOT NULL, primary key(ip) );
+ALTER TABLE reapIP_pre2015 ADD INDEX (mac);
+ALTER TABLE reapIP_pre2015 ADD INDEX (vlan);
+
+= reapmac:
+CREATE TABLE arp.reapmac (mac varchar(64) NOT NULL, recent varchar(32) NOT NULL, port varchar(32) NOT NULL, swname varchar(32) NOT NULL, vlan varchar(32) NOT NULL, primary key(mac,vlan) );
+
+= vgping:
+CREATE TABLE arp.vgping (vgname varchar(48) NOT NULL, vgip varchar(48) NOT NULL, ping varchar(20) NOT NULL);
+ALTER TABLE vgping ADD INDEX (vgip);
+
+= vgversion:
+CREATE TABLE arp.vgversion (swname varchar(48) NOT NULL, swip varchar(48) NOT NULL, version varchar(48) NOT NULL, reboot datetime NOT NULL, image varchar(48) NOT NULL, mac varchar(20) NOT NULL, model varchar(48) NOT NULL, serial varchar(48) NOT NULL, tstamp datetime NOT NULL);
+ALTER TABLE vgversion ADD INDEX (swname);
+ALTER TABLE vgversion ADD INDEX (swip);
+
+##########
+asa
+
+= arp:
+CREATE TABLE asa.arp (birth datetime NOT NULL, recent timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP, arpip varchar(32) NOT NULL, mac varchar(128) NOT NULL, vlan varchar(32) NOT NULL, context varchar(64) NOT NULL, active int(1) NOT NULL);
+ALTER TABLE arp ADD INDEX (arpip);
+ALTER TABLE arp ADD INDEX (mac);
+ALTER TABLE arp ADD INDEX (active);
+
+= xlate:
+CREATE TABLE asa.xlate (birth datetime NOT NULL, recent timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP, priv_ip varchar(32) NOT NULL, pub_ip varchar(32) NOT NULL, context varchar(64) NOT NULL, active int(1) NOT NULL);
+ALTER TABLE xlate ADD INDEX (priv_ip);
+ALTER TABLE xlate ADD INDEX (pub_ip);
+
+##########
+network
+
+= 50mmf:
+CREATE TABLE network.50mmf (panel varchar(30) NOT NULL, strand varchar(30) NOT NULL, pair varchar(30) NOT NULL, flag char(1) NOT NULL, target varchar(30) NOT NULL, endpoint varchar(30) NOT NULL, endpair varchar(30) NOT NULL, comment varchar(80) NOT NULL, primary key(panel,strand,pair) );
+ALTER TABLE 50mmf ADD INDEX (target);
+
+= auth:
+CREATE TABLE network.auth (netid varchar(48) NOT NULL, tribe varchar(48) NOT NULL);
+
+= borderfilterQ:
+CREATE TABLE network.borderfilterQ (address varchar(48) NOT NULL, operation varchar(20) NOT NULL, dateQ timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP, netid varchar(32) NOT NULL, comment varchar(256) NOT NULL);
+
+= borderfilterlog:
+CREATE TABLE network.borderfilterlog (address varchar(48) NOT NULL, operation varchar(20) NOT NULL, datefilt timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP, netid varchar(32) NOT NULL, comment varchar(256) NOT NULL);
+
+= borderfilters:
+CREATE TABLE network.borderfilters (tstamp timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP, address varchar(48) NOT NULL);
+
+= buildings:
+CREATE TABLE network.buildings (abbrev varchar(10) NOT NULL, name varchar(80) NOT NULL, num varchar(10) NOT NULL);
+
+= contexts:
+CREATE TABLE network.contexts (fw varchar(64) NOT NULL, context varchar(64) NOT NULL, timestamp datetime NOT NULL);
+
+= filter:
+CREATE TABLE network.filter (dateQ datetime NOT NULL DEFAULT 0000-00-00 00:00:00, datefilt datetime NOT NULL DEFAULT 0000-00-00 00:00:00, operation varchar(10) NOT NULL, type char(3) NOT NULL, mac varchar(48) NOT NULL, pub_ip varchar(20) NOT NULL, priv_ip varchar(20) NOT NULL, vlan varchar(20) NOT NULL, router varchar(20) NOT NULL, number varchar(12) NOT NULL, who varchar(20) NOT NULL, comment varchar(255) NOT NULL);
+
+= fixies:
+CREATE TABLE network.fixies (mac varchar(48) NOT NULL, ip varchar(48) NOT NULL);
+ALTER TABLE fixies ADD INDEX (mac);
+ALTER TABLE fixies ADD INDEX (ip);
+
+= forum_chvlan:
+CREATE TABLE network.forum_chvlan (swname varchar(48) NOT NULL, port varchar(48) NOT NULL, vlan varchar(48) NOT NULL, netid varchar(48) NOT NULL, tstamp timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP);
+
+= forum_chvlanQ:
+CREATE TABLE network.forum_chvlanQ (swname varchar(48) NOT NULL, port varchar(48) NOT NULL, vlan varchar(48) NOT NULL, netid varchar(48) NOT NULL);
+
+= globals:
+CREATE TABLE network.globals (ip varchar(48) NOT NULL, fw varchar(20) NOT NULL, context varchar(48) NOT NULL);
+ALTER TABLE globals ADD INDEX (ip);
+ALTER TABLE globals ADD INDEX (fw);
+ALTER TABLE globals ADD INDEX (context);
+
+= ipvlanmap:
+CREATE TABLE network.ipvlanmap (ip varchar(48) NOT NULL, vlan varchar(48) NOT NULL, context varchar(48) NOT NULL, nameif varchar(48) NOT NULL, nat_type varchar(20) NOT NULL, outside varchar(48) NOT NULL);
+ALTER TABLE ipvlanmap ADD INDEX (ip);
+ALTER TABLE ipvlanmap ADD INDEX (vlan);
+ALTER TABLE ipvlanmap ADD INDEX (context);
+
+= last_dhcp:
+CREATE TABLE network.last_dhcp (mac varchar(14) NOT NULL, ip varchar(15) NOT NULL, gateway varchar(15) NOT NULL, tstamp timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP, primary key(mac,gateway) );
+
+= linksys:
+CREATE TABLE network.linksys (mac varchar(48) NOT NULL, pub_ip varchar(48) NOT NULL, priv_ip varchar(48) NOT NULL, vlan varchar(48) NOT NULL);
+ALTER TABLE linksys ADD INDEX (mac);
+
+= macfilter:
+CREATE TABLE network.macfilter (dateQ datetime NOT NULL DEFAULT 0000-00-00 00:00:00, datefilt timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP, operation varchar(10) NOT NULL, type char(3) NOT NULL, mac varchar(48) NOT NULL, pub_ip varchar(20) NOT NULL, priv_ip varchar(20) NOT NULL, vlan varchar(48) NOT NULL, router varchar(48) NOT NULL, number varchar(12) NOT NULL, who varchar(20) NOT NULL, comment varchar(255) NOT NULL);
+
+= macfilterQ:
+CREATE TABLE network.macfilterQ (address varchar(48) NOT NULL, operation varchar(20) NOT NULL, dateQ timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP, user varchar(30) NOT NULL, number varchar(12) NOT NULL, comment varchar(255) NOT NULL);
+
+= macfilterlog:
+CREATE TABLE network.macfilterlog (dateQ datetime NOT NULL DEFAULT 0000-00-00 00:00:00, datefilt timestamp NOT NULL DEFAULT 0000-00-00 00:00:00, operation varchar(10) NOT NULL, type char(3) NOT NULL, mac varchar(48) NOT NULL, pub_ip varchar(20) NOT NULL, priv_ip varchar(20) NOT NULL, vlan varchar(48) NOT NULL, router varchar(48) NOT NULL, number varchar(12) NOT NULL, who varchar(20) NOT NULL, comment varchar(255) NOT NULL);
+
+= macfilters:
+CREATE TABLE network.macfilters (mac varchar(48) NOT NULL, router varchar(48) NOT NULL, vlan varchar(48) NOT NULL, primary key(mac,router,vlan) );
+
+= macflap:
+CREATE TABLE network.macflap (mac varchar(48) NOT NULL, vlan varchar(48) NOT NULL, switch varchar(48) NOT NULL, port1 varchar(48) NOT NULL, port2 varchar(48) NOT NULL, tstamp timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP, primary key(mac,vlan,switch) );
+
+= macvendor:
+CREATE TABLE network.macvendor (oui varchar(6) NOT NULL, vendor varchar(100) NOT NULL, primary key(oui) );
+
+= mmf:
+CREATE TABLE network.mmf (panel varchar(30) NOT NULL, strand varchar(30) NOT NULL, pair varchar(30) NOT NULL, flag char(1) NOT NULL, target varchar(30) NOT NULL, endpoint varchar(30) NOT NULL, endpair varchar(30) NOT NULL, comment varchar(80) NOT NULL, primary key(panel,strand,pair) );
+ALTER TABLE mmf ADD INDEX (target);
+
+= natpools:
+CREATE TABLE network.natpools (ip_range varchar(48) NOT NULL, mask varchar(30) NOT NULL, firewall varchar(30) NOT NULL, context varchar(30) NOT NULL, pool varchar(30) NOT NULL, vlan varchar(30) NOT NULL, outside varchar(30) NOT NULL, private_ip varchar(30) NOT NULL, private_mask varchar(30) NOT NULL);
+
+= nmap:
+CREATE TABLE network.nmap (ip varchar(48) NOT NULL, tstamp timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP, httpd varchar(30) NOT NULL, ssh varchar(20) NOT NULL, sqld varchar(20) NOT NULL, mail varchar(30) NOT NULL, dhcp varchar(30) NOT NULL, printer varchar(30) NOT NULL, rdp varchar(20) NOT NULL, ms varchar(50) NOT NULL, vnc varchar(30) NOT NULL, vpn varchar(30) NOT NULL, telnet varchar(20) NOT NULL, ftp varchar(20) NOT NULL, misc text NOT NULL);
+ALTER TABLE nmap ADD INDEX (ip);
+
+= nocpb:
+CREATE TABLE network.nocpb (voip varchar(30) NOT NULL, num varchar(30) NOT NULL);
+ALTER TABLE nocpb ADD INDEX (voip);
+ALTER TABLE nocpb ADD INDEX (num);
+
+= nofree_dhcp:
+CREATE TABLE network.nofree_dhcp (mac varchar(48) NOT NULL, network varchar(48) NOT NULL, tstamp timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP, primary key(mac,network) );
+
+= phone_moves:
+CREATE TABLE network.phone_moves (tstamp datetime NOT NULL, phone varchar(64) NOT NULL, previp varchar(64) NOT NULL, prevname varchar(64) NOT NULL, prevport varchar(64) NOT NULL, currip varchar(64) NOT NULL, currname varchar(64) NOT NULL, currport varchar(64) NOT NULL);
+
+= portmacs:
+CREATE TABLE network.portmacs (swname varchar(48) NOT NULL, port varchar(48) NOT NULL, maccount int(11) NOT NULL);
+ALTER TABLE portmacs ADD INDEX (swname);
+ALTER TABLE portmacs ADD INDEX (port);
+ALTER TABLE portmacs ADD INDEX (maccount);
+
+= portreset:
+CREATE TABLE network.portreset (swname varchar(48) NOT NULL, port varchar(48) NOT NULL, netid varchar(48) NOT NULL, tstamp varchar(48) NOT NULL);
+
+= portresetQ:
+CREATE TABLE network.portresetQ (swname varchar(48) NOT NULL, port varchar(48) NOT NULL, netid varchar(48) NOT NULL);
+
+= ranges:
+CREATE TABLE network.ranges (ip varchar(48) NOT NULL);
+ALTER TABLE ranges ADD INDEX (ip);
+
+= roguedev:
+CREATE TABLE network.roguedev (mac varchar(48) NOT NULL, pub_ip varchar(48) NOT NULL, priv_ip varchar(48) NOT NULL, vlan varchar(48) NOT NULL, vendor varchar(48) NOT NULL);
+ALTER TABLE roguedev ADD INDEX (mac);
+
+= routes:
+CREATE TABLE network.routes (ip varchar(30) NOT NULL, mask varchar(10) NOT NULL, first_host varchar(30) NOT NULL, last_host varchar(30) NOT NULL, router varchar(20) NOT NULL, vlan varchar(30) NOT NULL, code varchar(10) NOT NULL);
+ALTER TABLE routes ADD INDEX (ip);
+
+= routescopy:
+CREATE TABLE network.routescopy (ip varchar(30) NOT NULL, mask varchar(10) NOT NULL, first_host varchar(30) NOT NULL, last_host varchar(30) NOT NULL, router varchar(20) NOT NULL, vlan varchar(30) NOT NULL, code varchar(10) NOT NULL);
+ALTER TABLE routescopy ADD INDEX (ip);
+
+= rtrinfsw:
+CREATE TABLE network.rtrinfsw (rtr varchar(48) NOT NULL, inf varchar(48) NOT NULL, swname varchar(48) NOT NULL);
+ALTER TABLE rtrinfsw ADD INDEX (rtr);
+ALTER TABLE rtrinfsw ADD INDEX (inf);
+ALTER TABLE rtrinfsw ADD INDEX (swname);
+
+= rtrinfvlans:
+CREATE TABLE network.rtrinfvlans (rtr varchar(48) NOT NULL, inf varchar(48) NOT NULL, vlans varchar(1024) NOT NULL);
+ALTER TABLE rtrinfvlans ADD INDEX (rtr);
+ALTER TABLE rtrinfvlans ADD INDEX (inf);
+
+= smf:
+CREATE TABLE network.smf (panel varchar(30) NOT NULL, strand varchar(30) NOT NULL, pair varchar(30) NOT NULL, flag char(1) NOT NULL, target varchar(30) NOT NULL, endpoint varchar(30) NOT NULL, endpair varchar(30) NOT NULL, comment varchar(80) NOT NULL, primary key(panel,strand,pair) );
+
+= staticmap:
+CREATE TABLE network.staticmap (privip varchar(48) NOT NULL, pubip varchar(48) NOT NULL, vlan varchar(48) NOT NULL, context varchar(48) NOT NULL, outside varchar(48) NOT NULL);
+ALTER TABLE staticmap ADD INDEX (privip);
+ALTER TABLE staticmap ADD INDEX (pubip);
+ALTER TABLE staticmap ADD INDEX (vlan);
+ALTER TABLE staticmap ADD INDEX (context);
+
+= statics:
+CREATE TABLE network.statics (pub_ip varchar(48) NOT NULL, priv_ip varchar(48) NOT NULL, netmask varchar(48) NOT NULL, fw varchar(48) NOT NULL, context varchar(48) NOT NULL, vlan varchar(48) NOT NULL, outside varchar(48) NOT NULL);
+ALTER TABLE statics ADD INDEX (context);
+ALTER TABLE statics ADD INDEX (vlan);
+
+= swcfg:
+CREATE TABLE network.swcfg (swname varchar(48) NOT NULL, port varchar(48) NOT NULL, mode varchar(48) NOT NULL, vlan varchar(48) NOT NULL, voice varchar(48) NOT NULL, speed varchar(48) NOT NULL, duplex varchar(48) NOT NULL, port_sec int(11) NOT NULL, ps_max int(11) NOT NULL, ps_age int(11) NOT NULL, ps_viol varchar(48) NOT NULL, ps_age_type varchar(48) NOT NULL, scb_level varchar(10) NOT NULL, sc_action varchar(10) NOT NULL, bpdu_ena int(11) NOT NULL);
+ALTER TABLE swcfg ADD INDEX (swname);
+ALTER TABLE swcfg ADD INDEX (port);
+ALTER TABLE swcfg ADD INDEX (mode);
+ALTER TABLE swcfg ADD INDEX (vlan);
+ALTER TABLE swcfg ADD INDEX (voice);
+ALTER TABLE swcfg ADD INDEX (port_sec);
+ALTER TABLE swcfg ADD INDEX (scb_level);
+ALTER TABLE swcfg ADD INDEX (bpdu_ena);
+
+= swdate:
+CREATE TABLE network.swdate (serial varchar(48) NOT NULL, manufactured date NOT NULL, purchased date NOT NULL, installed date NOT NULL, retired date NOT NULL, comment varchar(40) NOT NULL, primary key(serial) );
+
+= swevent:
+CREATE TABLE network.swevent (swname varchar(48) NOT NULL, port varchar(48) NOT NULL, type varchar(48) NOT NULL, action varchar(48) NOT NULL, daycnt int(11) NOT NULL, host varchar(48) NOT NULL, vlan varchar(48) NOT NULL, tstamp varchar(48) NOT NULL);
+ALTER TABLE swevent ADD INDEX (swname);
+ALTER TABLE swevent ADD INDEX (type);
+
+= switcherrors:
+CREATE TABLE network.switcherrors (timestamp varchar(48) NOT NULL, switch varchar(48) NOT NULL, port varchar(48) NOT NULL, mac varchar(48) NOT NULL, errortype varchar(48) NOT NULL, errortext varchar(512) NOT NULL);
+ALTER TABLE switcherrors ADD INDEX (switch);
+
+= switchtree:
+CREATE TABLE network.switchtree (node_ip varchar(30) NOT NULL, local_int varchar(30) NOT NULL, device_id varchar(50) NOT NULL, platform varchar(30) NOT NULL, net_level varchar(30) NOT NULL, connect varchar(30) NOT NULL, UpHill varchar(30) NOT NULL, UpHill_int varchar(30) NOT NULL);
+
+= swmacfilterQ:
+CREATE TABLE network.swmacfilterQ (mac varchar(48) NOT NULL, operation varchar(20) NOT NULL, dateQ timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP, netid varchar(20) NOT NULL, comment varchar(255) NOT NULL);
+
+= swmacfilterlog:
+CREATE TABLE network.swmacfilterlog (datefilt timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP, operation varchar(20) NOT NULL, mac varchar(48) NOT NULL, vlan varchar(48) NOT NULL, swname varchar(48) NOT NULL, netid varchar(20) NOT NULL, comment varchar(255) NOT NULL);
+
+= swmacfilters:
+CREATE TABLE network.swmacfilters (mac varchar(48) NOT NULL, swname varchar(48) NOT NULL, vlan varchar(48) NOT NULL, datefilt timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP, primary key(mac,swname,vlan) );
+
+= swmd:
+CREATE TABLE network.swmd (model varchar(30) NOT NULL, firmware varchar(80) NOT NULL, md5sum char(32) NOT NULL, dir varchar(20) NOT NULL, comment varchar(80) NOT NULL, primary key(model) );
+
+= swportresetQ:
+CREATE TABLE network.swportresetQ (swname varchar(48) NOT NULL, port varchar(48) NOT NULL, netid varchar(48) NOT NULL);
+
+= swportresetfail:
+CREATE TABLE network.swportresetfail (swname varchar(48) NOT NULL, port varchar(20) NOT NULL, netid varchar(20) NOT NULL, tstamp datetime NOT NULL, comment varchar(255) NOT NULL);
+
+= swportresetlog:
+CREATE TABLE network.swportresetlog (swname varchar(48) NOT NULL, port varchar(48) NOT NULL, netid varchar(48) NOT NULL, tstamp varchar(48) NOT NULL);
+
+= swvlans:
+CREATE TABLE network.swvlans (swname varchar(48) NOT NULL, vlans varchar(1024) NOT NULL);
+ALTER TABLE swvlans ADD INDEX (swname);
+
+= vlanmap:
+CREATE TABLE network.vlanmap (vlan varchar(48) NOT NULL, router varchar(48) NOT NULL, subnet varchar(48) NOT NULL, status varchar(48) NOT NULL, dhcpserver varchar(48) NOT NULL, state varchar(48) NOT NULL, description varchar(120) NOT NULL);
+ALTER TABLE vlanmap ADD INDEX (vlan);
+
+= vlansplits:
+CREATE TABLE network.vlansplits (vlan varchar(48) NOT NULL, subpre varchar(48) NOT NULL, subnet varchar(32) NOT NULL);
+
+= vsplits:
+CREATE TABLE network.vsplits (sub_pre varchar(48) NOT NULL, vlan varchar(48) NOT NULL, network varchar(48) NOT NULL, dhcpserver varchar(48) NOT NULL);
+
+= wcsrogues:
+CREATE TABLE network.wcsrogues (id int(11) NOT NULL, lastseen varchar(48) NOT NULL, wirelessmac varchar(48) NOT NULL, wiredmac varchar(48) NOT NULL, detectap varchar(48) NOT NULL, radiotype varchar(20) NOT NULL, controllerip varchar(20) NOT NULL, aplocation varchar(48) NOT NULL, classification varchar(48) NOT NULL, onnetwork varchar(20) NOT NULL, switch varchar(48) NOT NULL, port varchar(48) NOT NULL, ip varchar(20) NOT NULL, vlan varchar(10) NOT NULL, ssid varchar(48) NOT NULL, primary key(id) );
+
+##########
+router
+
+= arp:
+CREATE TABLE router.arp (birth datetime NOT NULL, recent timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP, mac varchar(48) NOT NULL, ip varchar(48) NOT NULL, router varchar(48) NOT NULL, vlan varchar(48) NOT NULL, active int(1) NOT NULL);
+ALTER TABLE arp ADD INDEX (mac);
+ALTER TABLE arp ADD INDEX (ip);
+
+##########
+rtr
+
+= arp:
+CREATE TABLE rtr.arp (birth datetime NOT NULL, recent timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP, mac varchar(48) NOT NULL, ip varchar(48) NOT NULL, rtr varchar(48) NOT NULL, vlan varchar(48) NOT NULL, active int(1) NOT NULL);
+ALTER TABLE arp ADD INDEX (mac);
+ALTER TABLE arp ADD INDEX (ip);
+ALTER TABLE arp ADD INDEX (active);
+
+= ping:
+CREATE TABLE rtr.ping (rname varchar(48) NOT NULL, rip varchar(48) NOT NULL, ping varchar(10) NOT NULL);
+
+##########
+switch
+
+= boot:
+CREATE TABLE switch.boot (swname varchar(48) NOT NULL, swip varchar(48) NOT NULL, module varchar(12) NOT NULL, bootpath varchar(128) NOT NULL, tstamp timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP);
+ALTER TABLE boot ADD INDEX (swname);
+ALTER TABLE boot ADD INDEX (swip);
+
+= cdp:
+CREATE TABLE switch.cdp (swip varchar(48) NOT NULL, swname varchar(48) NOT NULL, localPort varchar(30) NOT NULL, remoteDeviceID varchar(30) NOT NULL, remoteIP varchar(30) NOT NULL, remotePort varchar(30) NOT NULL, platform varchar(30) NOT NULL, version varchar(30) NOT NULL, capabilities varchar(30) NOT NULL, VTPdomain varchar(30) NOT NULL, powerDrawn varchar(30) NOT NULL, powerRequest varchar(48) NOT NULL, tstamp timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP);
+ALTER TABLE cdp ADD INDEX (swip);
+ALTER TABLE cdp ADD INDEX (swname);
+
+= errdis:
+CREATE TABLE switch.errdis (swip varchar(48) NOT NULL, swname varchar(48) NOT NULL, port varchar(48) NOT NULL, tstamp timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP, reason varchar(128) NOT NULL);
+
+= inline:
+CREATE TABLE switch.inline (swname varchar(48) NOT NULL, swip varchar(48) NOT NULL, interface varchar(48) NOT NULL, admin varchar(12) NOT NULL, oper varchar(12) NOT NULL, power varchar(12) NOT NULL, device varchar(32) NOT NULL, class varchar(12) NOT NULL, max varchar(12) NOT NULL, tstamp timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP);
+ALTER TABLE inline ADD INDEX (swname);
+ALTER TABLE inline ADD INDEX (swip);
+
+= intcfg:
+CREATE TABLE switch.intcfg (swname varchar(48) NOT NULL, port varchar(48) NOT NULL, mode varchar(48) NOT NULL, vlan varchar(48) NOT NULL, voice varchar(48) NOT NULL, speed varchar(48) NOT NULL, duplex varchar(48) NOT NULL, port_sec int(11) NOT NULL, ps_max int(11) NOT NULL, ps_age int(11) NOT NULL, ps_viol varchar(48) NOT NULL, ps_age_type varchar(48) NOT NULL, scb_level varchar(16) NOT NULL, sc_action varchar(16) NOT NULL, bpdu_ena int(11) NOT NULL, tstamp timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP);
+
+= inv:
+CREATE TABLE switch.inv (swname varchar(48) NOT NULL, swip varchar(48) NOT NULL, partname varchar(48) NOT NULL, descr varchar(48) NOT NULL, pid varchar(48) NOT NULL, vid varchar(48) NOT NULL, serial varchar(48) NOT NULL, tstamp timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP);
+ALTER TABLE inv ADD INDEX (swname);
+ALTER TABLE inv ADD INDEX (swip);
+
+= lastconnect:
+CREATE TABLE switch.lastconnect (swname varchar(48) NOT NULL, swip varchar(48) NOT NULL, recent timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP);
+
+= mac:
+CREATE TABLE switch.mac (mac varchar(48) NOT NULL, vlan varchar(48) NOT NULL, port varchar(48) NOT NULL, swip varchar(48) NOT NULL, swname varchar(48) NOT NULL, birth datetime NOT NULL, recent timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP, type varchar(24) NOT NULL, active int(1) NOT NULL);
+ALTER TABLE mac ADD INDEX (mac);
+
+= noconnect:
+CREATE TABLE switch.noconnect (swname varchar(48) NOT NULL, swip varchar(48) NOT NULL, tstamp timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP);
+
+= phone_moves:
+CREATE TABLE switch.phone_moves (tstamp datetime NOT NULL, phone varchar(64) NOT NULL, previp varchar(64) NOT NULL, prevname varchar(64) NOT NULL, prevport varchar(64) NOT NULL, currip varchar(64) NOT NULL, currname varchar(64) NOT NULL, currport varchar(64) NOT NULL);
+
+= ping:
+CREATE TABLE switch.ping (swname varchar(48) NOT NULL, swip varchar(48) NOT NULL, ping varchar(8) NOT NULL);
+
+= power:
+CREATE TABLE switch.power (swname varchar(48) NOT NULL, swip varchar(48) NOT NULL, module varchar(12) NOT NULL, total varchar(12) NOT NULL, used varchar(12) NOT NULL, remaining varchar(12) NOT NULL, tstamp timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP);
+ALTER TABLE power ADD INDEX (swname);
+ALTER TABLE power ADD INDEX (swip);
+
+= version:
+CREATE TABLE switch.version (swname varchar(48) NOT NULL, swip varchar(48) NOT NULL, module varchar(12) NOT NULL, version varchar(48) NOT NULL, software varchar(48) NOT NULL, uptime varchar(48) NOT NULL, image varchar(96) NOT NULL, mac varchar(48) NOT NULL, model varchar(48) NOT NULL, serial varchar(48) NOT NULL, tstamp timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP);
+ALTER TABLE version ADD INDEX (swname);
+ALTER TABLE version ADD INDEX (swip);
+
+= vgping:
+CREATE TABLE switch.vgping (swname varchar(48) NOT NULL, swip varchar(48) NOT NULL, ping varchar(8) NOT NULL);
+
+= vlan:
+CREATE TABLE switch.vlan (tstamp datetime NOT NULL, swip varchar(48) NOT NULL, swname varchar(48) NOT NULL, port varchar(48) NOT NULL, name varchar(30) NOT NULL, status varchar(16) NOT NULL, vlan varchar(20) NOT NULL, duplex varchar(10) NOT NULL, speed varchar(10) NOT NULL, type varchar(20) NOT NULL);
+ALTER TABLE vlan ADD INDEX (swip);
+ALTER TABLE vlan ADD INDEX (vlan);
+

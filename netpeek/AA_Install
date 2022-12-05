@@ -1,0 +1,33 @@
+=== netpeek webserver
+
+= Install
+netpeek is a suite of web cgi scripts running on a webserver that gives various views into all the data collected by the network suite.
+By default all script work is done via sudo, and owned and run as root.
+netpeek web cgi scripts reside in the ./netpeek subdirectory of the configured cgi-bin directory of the webserver, commonly found in   /var/www/cgi-bin
+In a standard install, copy the unzipped netpeek block into cgi-bin
+(If using another directory, adjust command.)
+
+1) default install:  copy unzipped netpeek directory tree to /var/www/cgi-bin using -pr options
+
+sudo cp -pr netpeek  /var/www/cgi-bin
+
+2) Prepare files in /netpeek/lib
+Minimal form of the hostname is used, no domain suffix.
+Some library files require manual configuration editing.
+Edit each of these files in /netwonk/lib :
+
+ - auth.pl - enter userid/netid of authorized users in hash form, by group as needed.
+
+ - dbipw.pl -  password call for database server.  For initial setup and testing, fill in FDQN, user ("network") and password.
+When stable edit in local secure password call instead.
+
+ - exroutes.pl - is a primitive way to document external routes included into the output of iproutes.cgi for administrative purposes,
+usually only on large complex networks.  Likely not needed.
+
+ - servers.pl - fill in all information as listed, for servers, DNS, IP prefixes, DHCP, NTP, ASA info, admin, list and
+user email info, various path info.  EVERYTHING in this file is an example.  Fill in the real network information.
+
+= CGI Script Index page
+./netpeek/index
+
+

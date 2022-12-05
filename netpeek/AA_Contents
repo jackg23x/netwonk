@@ -1,0 +1,39 @@
+
+= netpeek - webserver code
+
+[netpeek]
+allmacfilters.cgi      - search and display all current macfilters from all routers
+allswmacfilters.cgi    - search and display all current switch macfilters
+borderfilter.cgi       - filtering utility for border router issues
+chvlan.cgi             - queueing suite allowing certain users vlan configuration control
+errdis.cgi             - show all err-disabled switch ports currently reachable
+find_dhcp.cgi          - map of IP fixed leases, statics, ranges, recent use, etc.
+index                  - index file for script access
+iproutes.cgi           - IP level map of connected networks
+macfilter.cgi          - mac-address-based filtering utility on routers
+multivoip.cgi          - show switch ports with multiple voip phones
+netpeek.cgi            - network search utility
+PhoneMoves.cgi         - Utility for tracking VoIP phone moves and installs
+pingableswitches.cgi   - All switches that answered to the last round of pings
+pingablevgs.cgi        - All VGs that answered to the last round of pings
+reapmac_count.cgi      - mac addresses last updated as of date
+sw.cgi                 - Switchport/Mac utility
+switch_lastconnect.cgi - Last time a switch connected by script (swmisc.pl) oldest first
+switch_noconnect.cgi   - Switches that have failed to connected in the past seven days by date
+swmacfilter.cgi        - mac-address-based filtering utility on switches
+vlanmap.cgi            - Vlans info: vlan number, source router/fw, state, dhcp server, descriptions
+
+
+[netpeek/lib]
+auth.pl                - simple code for user auth/access
+dbipw.pl               - password call for database server, edit for secure call
+exroutes.pl            - kludge code used to add external affiliated network data into iproutes.cgi
+servers.pl             - local constant data, IP, hostname, path, userid, etc.
+
+
+[netpeek/util]
+countmac.pl            - tool: totals macs per vlan from arp.reapIP; date threshold
+splitTextbox.pl        - test code
+TEST.pl                - test code
+
+

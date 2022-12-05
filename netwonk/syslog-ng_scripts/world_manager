@@ -1,0 +1,7 @@
+SHELL=/bin/bash
+PATH=/sbin:/bin:/usr/sbin:/usr/bin
+MAILTO=root
+*/5 * * * * root /etc/syslog-ng/scripts/world_manager.pl world_ack.pl
+*/5 * * * * root /etc/syslog-ng/scripts/world_manager.pl world_nofree.pl
+*/5 * * * * root /etc/syslog-ng/scripts/world_manager.pl world_macflap.pl
+

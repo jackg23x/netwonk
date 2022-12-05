@@ -1,0 +1,64 @@
+#!/usr/bin/perl
+#jackg@uic.edu 
+# look for a mac in a running config 
+
+use strict;
+
+use FindBin qw($Bin);
+use lib "$FindBin::Bin/../lib";
+my $installpath = $Bin;
+$installpath =~ s/\/$//;
+$installpath =~ s/\/util//;
+
+use lib "$installpath/lib";
+use SshSwcon;
+
+if (!defined @ARGV)  {  help();  exit;  }
+if ( grep / -h/ , @ARGV )  {  help();  exit;  }
+my $args;
+@$args = @ARGV;
+
+my $mac    = $args->[0];
+my $swname = $args->[1];
+
+require "$installpath/lib/core_routers.pl";
+my $ipprefix = routeripprefix();
+my ($session,$swip);
+if ($swname =~ /\A30|40\z/)  {
+   my $swip = "$ipprefix.$swname";
+   print "connecting to $swip...\n";
+   $session = SshSwcon->new($swip);
+}
+else  {
+   print "connecting to $swname...\n";
+   $session = SshSwcon->new($swname);
+}
+my ($connect,$state);
+## $connect tells whether we were able to get to switch
+if ($swname =~ /\A30|40\z/)  {
+   my $swip = "$ipprefix.$swname";
+   $state = $session->connect($swip);
+}
+else  { $state = $session->connect($swname); }
+if ($state eq "notconnected")  {
+   print "CONNECT ERROR: $swname - Session state = $state\n";
+   exit;
+}
+my $ena_ret;
+if ($state ne "enabled")  { $ena_ret = $session->enable(); }
+$session->command("show runn \| inc $mac",0);
+$session->close;
+print "...exiting\n\n";
+
+exit;
+
+##################################
+
+sub help  {
+
+  print "\nconswf <mac> <switchname>  --  look for mac on a running config; works for 30 and 40 as well.\n";
+  print "example:\n";
+  print "./conswf dead.beef.face selw-fdf-a1 \n\n";
+  exit;
+
+}

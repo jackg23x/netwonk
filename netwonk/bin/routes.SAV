@@ -1,0 +1,253 @@
+#!/usr/bin/perl
+## jackg@uic.edu 
+##
+## routes.pl
+## Grab routing tables off routers and firewalls, massage as needed and put in db tables
+##
+
+
+use strict;
+
+use FindBin qw($Bin);
+use lib "$FindBin::Bin/../lib";
+my $installpath = $Bin;
+$installpath =~ s/\/$//;
+$installpath =~ s/\/bin//;
+
+use lib "$installpath/lib";
+use Sshcon;
+use IO::File;
+
+require "$installpath/lib/core_routers.pl";  
+use vars qw(%core_routers);
+require "$installpath/lib/contextmap.pl";  
+use vars qw(%context_groups);
+my $allASA;      ## hash ref
+##
+no strict; ## for the hash  %{$grp}
+foreach my $grp (keys %context_groups)  {
+   my %grphash = %{$grp};
+   %$allASA = (%$allASA,%grphash);
+}  
+use strict;
+##
+
+##while (my($x,$y) = each(%$allASA))  { print "$x  $y\n"; }
+
+#my $jf  = "$installpath/forensic/firewalls/routes.out";
+#my $jfh = IO::File->new(">$jf");
+
+## Switch Variables
+my $db  = 1;     ## process to database
+my $asa = 1;     ## process asas 
+my $rts = 1;     ## process routers
+if ($asa == 0) { print "\n  ASA processing turned off \n";  }  
+if ($rts == 0) { print "\n  Router processing turned off \n";  }  
+if ($db  == 0) { print "\n\n   *****   DATABASE PROCESSING TURNED OFF   *****   \n\n";  sleep(7); }
+
+my $start = `date`;
+
+use DBI;
+
+require "$installpath/lib/dbipw.pl";
+my ($h,$u,$p) = dbigrabit();
+my $dbh = DBI->connect("DBI:mysql:host=$h",$u,$p,{RaiseError => 1});
+
+my $allroutes;  
+my ($session,$rname,$rip);
+## CORE ROUTERS
+if ($rts)  {
+   foreach my $rip (keys %core_routers)  {      
+      $rname = $core_routers{$rip};
+      print "router: $rname $rip\n";
+      $session = Sshcon->new("$rip");
+      my $state = $session->connect;
+      if ($state eq "connected")  { $session->enable(); }
+      $session->command("term len 0",1);
+      my $cmd_ret = $session->command("show ip route",5);
+      my $routes_ret = process_routes($cmd_ret,$rname,"core router");
+      if ($routes_ret)  {   push @$allroutes,@$routes_ret;  }
+      $session->close;
+   }  ## foreach 
+}
+
+## ASAs
+if ($asa)  {
+   while (my ($rip,$rname) = each %$allASA)  {
+      print "firewall asa: $rname $rip\n";
+      $session = Sshcon->new("$rip");
+      my $state = $session->connect;
+      #if ($state eq "connected")  { $session->enable(); }
+      $session->enable();
+      $session->command("term pager 0",1);
+      my $cmd_ret = $session->command("show route",5);
+      my $routes_ret = process_routes($cmd_ret,$rname,"ASA");
+      if ($routes_ret)  {   push @$allroutes,@$routes_ret;  }
+      $session->close;
+   } ## while
+}
+
+if ($db)  {
+   # delete from table all entries - it's a rebuild
+   my $delete_h = $dbh->prepare("DELETE FROM network.routes;");  
+   $delete_h->execute();
+   # write all new table entries
+   foreach my $ar (@$allroutes)  {
+      my $insert_h;
+      $insert_h = $dbh->prepare("INSERT INTO network.routes     VALUES(?,?,?,?,?,?,?);"); 
+      #my $rstr = join "  ",@$ar;
+      #print $jfh "AR: ", join " ",@$ar, "\n";
+      $insert_h->execute(@$ar);
+   }
+}
+else  {
+   my $rts;
+   foreach my $ar (@$allroutes)  {
+      my $rstr = join "  ",@$ar;
+      push @$rts,$rstr; 
+   }
+   $rts = sort_by_ip($rts);
+   #foreach my $r (@$rts)  {  print $jfh "AR: $r\n";  }
+}
+print " \n";  
+my $end = `date`;
+#print $jfh "routes.pl: start $start   end $end\n";
+print "routes.pl: start $start   end $end\n";
+
+exit;
+
+################################################### 
+
+sub process_routes  {
+
+   my $route_ret = shift;   ## array of return from cisco
+   my $rname     = shift;
+   my $rtype     = shift;
+ 
+   my $routes;  ## array of arrays of a single route info 
+   my $rt_hash; ## hash to prep uniqueness into the above
+   foreach my $ln (@$route_ret)  {
+      if ($ln =~ /Codes/)  { next; }
+      chomp($ln);                          
+      my ($rt_type,$ip,$vlan,$network,$mask);
+      ##if ($ln =~ /^C/)  {
+      ##if ($ln =~ /^C/ || $ln =~ /^S/)  {           
+      if ($ln =~ /^C/ || $ln =~ /^S/ || $ln =~ /^D EX/)  {           
+         $ln =~ s/\*//g;
+         #if ($ln =~ /^D EX/)  {  $ln =~ s/D EX/D/;  }
+         if ($ln =~ /^D EX/)  {  $ln =~ s/D EX/DEX/; } ##print $jfh "LINE: $ln \n"; }
+         if ($rtype eq "core router")  {
+            if ($ln =~ /^D/)  {  
+               ($rt_type,$network,undef,undef,undef,undef,$vlan) = split " ", $ln;
+               ($ip,$mask) = split '/', $network;                  
+               ## print $jfh "D EX: ip >$ip<   network >$network<   vlan >$vlan< \n";
+            }
+            else  {
+               ($rt_type,$network,undef,undef,undef,$vlan)  = split " ", $ln;   # rt_type C,S
+               ($ip,$mask) = split '/', $network;
+            }
+         }
+         if ($rtype eq "ASA")  {
+            ### ($rt_type,$network,$mask,undef,undef,undef,$vlan) = split " ", $ln;
+            if ($ln =~ /^D/)  {  ($rt_type,$ip,$mask,undef,undef,undef,undef,$vlan) = split " ", $ln;  }
+            else              {  ($rt_type,$ip,$mask,undef,undef,undef,$vlan)       = split " ", $ln;  }
+            $mask = re_mask($mask);
+         }
+
+         if ($vlan =~ /vlan/i)               { $vlan =~ s/vlan//i; }
+         elsif ($vlan =~ /GigabitEthernet/)  {   }
+         elsif ($vlan !~ /vlan/i)            { 
+            my $query = "SELECT vlan FROM network.ipvlanmap WHERE ip = \"$ip\"; ";    
+            my $select_h  = $dbh->prepare($query);
+            $select_h->execute();
+            if ($select_h->rows != 0) {
+               my $sel_ary = $select_h->fetchall_arrayref;
+               $vlan      = $sel_ary->[0]->[0] ;
+               #print $jfh "vlan: $vlan\n";
+            }
+         }          
+    
+         if ($vlan eq "") { $vlan = "0"; }
+         if ($mask eq "") { $mask = "24"; } ## old Kludge for 172.16.14.0 route on 30/CSM
+         my ($w,$x,$y,$z) = split /\./ , $ip;
+         my $v;
+         if   ($mask eq "30")  { $v = $z + 1; }
+         else                  { $v = $z + 2; }
+         my $first = "$w.$x.$y.$v";
+         my $exp = 32 - $mask;
+         my $ipspace = 2**$exp;
+         my $last;
+         if ($mask eq "32")     { $first = "$w.$x.$y.$z";           $last  = "$w.$x.$y.$z"; }
+         elsif ($mask eq "0")   { $first = "n/a";                   $last = "n/a"; }
+         elsif ($mask gt "23")  { $v = $z + $ipspace - 2;           $last = "$w.$x.$y.$v"; }
+         elsif ($mask lt "16")  { my $sub = $x + 2**(16-$mask) - 1; $last = "$w.$sub.255.254";  }
+         else                   { my $sub = $y + 2**(24-$mask) - 1; $last = "$w.$x.$sub.254";  }
+  
+         if (exists $rt_hash->{"$ip $rname $vlan"}) {  next;  }
+         else  {
+            my $rt;
+            @$rt = split " ", "$ip $mask $first $last $rname $vlan $rt_type";
+            push @$routes, $rt;
+            $rt_hash->{"$ip $rname $vlan"} = 1;  
+         }  
+      }
+   } 
+   return($routes);
+}
+
+#########################################
+
+sub re_mask   {
+
+   my $mask = shift;
+
+   if ($mask eq "255.0.0.0")       { return(8); }
+   if ($mask eq "255.128.0.0")     { return(9); }
+   if ($mask eq "255.192.0.0")     { return(10); }
+   if ($mask eq "255.224.0.0")     { return(11); }
+   if ($mask eq "255.240.0.0")     { return(12); }
+   if ($mask eq "255.248.0.0")     { return(13); }
+   if ($mask eq "255.252.0.0")     { return(14); }
+   if ($mask eq "255.254.0.0")     { return(15); }
+   if ($mask eq "255.255.0.0")     { return(16); }
+   if ($mask eq "255.255.128.0")   { return(17); }
+   if ($mask eq "255.255.192.0")   { return(18); }
+   if ($mask eq "255.255.224.0")   { return(19); }
+   if ($mask eq "255.255.240.0")   { return(20); }
+   if ($mask eq "255.255.248.0")   { return(21); }
+   if ($mask eq "255.255.252.0")   { return(22); }
+   if ($mask eq "255.255.254.0")   { return(23); }
+   if ($mask eq "255.255.255.0")   { return(24); }
+   if ($mask eq "255.255.255.128") { return(25); }
+   if ($mask eq "255.255.255.192") { return(26); }
+   if ($mask eq "255.255.255.224") { return(27); }
+   if ($mask eq "255.255.255.240") { return(28); }
+   if ($mask eq "255.255.255.248") { return(29); }
+   if ($mask eq "255.255.255.252") { return(30); }
+   if ($mask eq "255.255.255.255") { return(32); }
+   #return($mask);
+   return(0);
+
+}  ## re_mask
+
+#################################################
+
+sub sort_by_ip  {
+
+my $iplist = shift;   ## array ref
+
+## here's the mapping transform for IP number sorting:
+    @$iplist =
+        map {$_->[0]}
+        sort { ($a->[1] <=>$b->[1])
+                    || ($a->[2] <=>$b->[2])
+                    || ($a->[3] <=>$b->[3])
+                    || ($a->[4] <=>$b->[4]) }
+        map {[$_, split( '[ \.]', $_) ]} @$iplist;
+
+return ($iplist);
+
+}  ## sort_by_ip
+
+######################################
+

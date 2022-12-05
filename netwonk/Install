@@ -1,0 +1,182 @@
+Netwonk project
+
+Netwonk is a network monitoring package for Cisco equipment. 
+It also supports some Palo Alto firewalls, and can be extended to other hardware.  
+It is written in Perl.
+The netwonk project includes a collection of scripts, the Netpeek web package, 
+and configuration for all databases and tables on an integrated mariadb/mysql server.
+It also includes code necessary for a syslog-ng server sending DHCP and macflap data to the database server.
+A normal netwonk installation consist of separate script, web and database servers (plus code added to syslog server).  
+This works nicely with a trio of VMs running scripts, web and database.  
+In a small installation, all three functionalities could work on one server, though that has not been tested.  
+
+Standard install instructions 
+
+=== DNS namespace restriction
+
+The suite is dependent upon having DNS subdomain entries for the various types of devices.
+Hostname and Cname data can be manipulated to effect this via simple scripts fairly easily.
+
+Device		DNS subdomain
+-------------------------------
+switch		switch.<domain_suffix>
+layer-3 switch  rtr.<domain_suffix>     (Catalyst L3, etc.)
+ASAs		asa.<domain_suffix>
+fw              fw.<domain_suffix>  
+
+
+############
+
+=== database server, mysql/mariadb
+
+Within mysql, create user 'network'
+Allow access to both scriptserver and webserver.
+
+############
+
+
+=== the database server
+
+= Install 
+network and netpeek are configured to work with a mysql/mariadb database server. 
+Inside of the mysql environment, create account 'network' for all netwonk and netpeek interaction. 
+This info will be copied into in the netwonk and netpeek  ./lib.dbipw.pl  scripts. 
+
+Create the following databases:
+arp
+fw
+network
+router
+rtr
+switch
+
+The file  ./netwonk/util/mysql_desc_all.out   contains configuration commands for all needed tables.
+Login to a mysql session as root.
+Copy and paste all commands in mysql_desc_all.out into the mysql environment, and it will create all needed tables;
+
+
+
+
+=== netwonk - scriptserver
+
+= Install - Prep
+1) Create user 'networkuser' for file ownership and cron jobs.
+2) unzip/untar the netwonk package.
+
+
+= Install 
+netwonk production scripts reside in ./netwonk/bin and are called by cron jobs. 
+They connect to network devices, collect data, and update database tables used by the netpeek web apps.
+1) default install:  copy netwonk directory tree to /opt/netwonk  using -pr options
+
+sudo cp -pr netwonk /opt
+
+Check to verify that 'networkuser' is the owner and group of /opt/netwonk/* 
+
+2) Prepare files in /netwonk/lib
+Minimal form of the hostname is used, no domain suffix.
+Eight of the library files require manual configuration editing.  
+Edit each of these files in /netwonk/lib :
+
+ - ASRs.pl - fill in IP and hostname for any ASR boxes
+
+ - core_routers.pl - fill in IP and hostname of all core routers; fill in IP and hostname of routers used for mac filtering
+
+- border_routers.pl - fill in IP and hostname of your one or more border routers.
+
+- dbipw.pl - password call for database server.  For initial setup and testing, fill in FDQN, user and password.  
+When stable edit in local secure password call instead.
+
+- filter_routers.pl - fill in IP and hostname for all filtering routers
+ 
+- PaloAltos.pl - fill in IP and hostname of any Palo Alto firewalls
+
+- PWtest.pl - password code for network devices.  Use as-is for setup and testing. 
+Once everything works, reference calls to local secure password routine calls.
+
+- servers.pl - fill in all information as listed, for servers, DNS, IP prefixes, DHCP, NTP, ASA info, 
+admin, list and user email info, various path info.  
+EVERYTHING in this file is an example.  Fill in the real network information.
+
+* The ASA configuration file group contextmap* gets its own section below
+ 
+3) Files in /netwonk/util
+Two files in ./netwonk/util run in cron.
+One, prune_tables.pl, may require editing of pruning cycles according to local preference, 
+but will probably run fine as configured here.  It configures how many days data is retained.
+backup-rsync-mnt.pl does not require editing, as it gets all data from ./lib/servers.pl
+
+The rest of the scripts in ./netwonk/util are tools that may or may not be used as needed.
+
+contextmap* and Cisco ASA
+contextmap files are used for Cisco ASA units with multiple contexts enabled on the box, which is how they are commonly configured.
+
+First, make sure your 'dnssuffix' and 'fwzone' are set in ./lib/servers.pl
+   sub dnssuffix    { return ('<dns_domain>'); }
+   sub fwzone       { return ('asa'); }       ### this is the DNS default - edit if needed
+
+The library file ./netwonk/lib/contextmap.pl is required for ASA processing.
+Create an IP gateway on each ASA context for ssh access, making sure it is accessible from the network Scriptserver where all the production code lives. 
+./netwonk/lib.contextmap.pl can be created manually by editing the default included file, 
+or it can be generated using the utility file ./netwonk/util/contextmap_creator.pl
+contextmap_creator.pl attempts to analyze ASA boxes creates an intermediate file called ./netwonk/util/contextmap.pl.NEW
+This should be thoroughly checked for agreement with the actual network layout.
+It may ferret out missing ssh context interfaces, or other inconsistencies.
+Hopefully it will minimize manual configuration on larger networks.
+If/Once it all looks good, copy it as follows:
+
+     sudo cp ./util/contextmap.pl.NEW   ./lib/contextmap.pl
+
+This is used as the interface data for all ASA access and data collection, ./bin/fw-asa* scripts.
+
+4) Testing script runs manually
+
+Use child scripts (./bin/*C.pl) to test individual process runs for one device to check database server interaction.  
+Watch for package dependencies and resolve.
+
+* routes.pl is a simple one-process program to start testing the production environment.
+It rewrites the entire table each time it runs, so debugging is straightforward.
+Keep running scripts manually and checking tables for output.
+
+5) Crontab
+Most of the various scripts are run in cron cycles.  
+File cron.netwonk can be seen as a template example, or can be used as-is.
+Adjust time cycles as needed.
+By default, the cron file resides at   /etc/cron.d/netwonk
+
+Let the scripts runs build up some data in the tables.
+This will make it possible to test the netpeek webserver software.
+
+
+=== syslog-ng server scripts
+
+Standard install makes use of a syslog-ng server.
+The syslog-ng service likely runs on its own machine or VM, but could be run on the same hardware or VM as
+one of the other netwonk servers in certain cases. 
+
+The syslog-ng service is used to process DHCP and network device syslog messages to the database tables:
+network.last_dhcp
+network.macflap
+network.nofree_dhcp
+
+Make sure network devices are sending logging to this syslog-ng server.
+Also make sure the DHCP server is logging to this syslog-ng server.
+
+1) Copy the following files to /etc/syslog-ng/scripts/ on the syslog-ng server:
+
+world_ack.pl     - DHCP log processing, feeds table network.last_dhcp
+world_macflap.pl - switch process, feeds table network.macflap
+world_manager.pl - process check and init for world* scripts, invoked by /etc/cron.d/world_manager
+world_nofree.pl  - DHCP process, feeds table network.nofree_dhcp 
+world_pw.pl      - password process; replace call with secure local process
+world_manager    - process manager for world* scripts. ***Copy to /etc/cron.d/world_manager
+
+2) Edit correct information (host,user,password) or secure process call into world_pw.pl
+
+3) Cron - copy file world_manager to /etc/cron.d/world_manager
+
+     sudo cp -pr /etc/cron.d/world_manager
+
+This script checks for running world* processes and restarts them if needed.
+
+===========================

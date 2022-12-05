@@ -1,0 +1,129 @@
+SHELL=/bin/bash
+PATH=/sbin:/bin:/usr/sbin:/usr/bin
+MAILTO=root
+
+## Backup all the scripts
+42 15      * * *    networkuser /opt/netwonk/util/backup-rsync-mnt.pl   > /dev/null
+
+## Prune certain database tables
+23 20      * * *    networkuser /opt/netwonk/util/prune_tables.pl all   >> /var/log/prune_tables.log
+
+
+## router SHOW ARP code w/reapIP   not using the Parent code, just calling instances here
+0,15,30,45 * * * *  networkuser /opt/netwonk/bin/routerC.pl 37 10.20.149.37  > /dev/null
+1,16,31,46 * * * *  networkuser /opt/netwonk/bin/routerC.pl 47 10.20.149.47  > /dev/null
+2,17,32,47 * * * *  networkuser /opt/netwonk/bin/routerC.pl 30 10.20.149.30  > /dev/null
+3,18,33,48 * * * *  networkuser /opt/netwonk/bin/routerC.pl 40 10.20.149.40  > /dev/null
+
+# router config parent/child code
+23 10,16,20 * * *   networkuser /opt/netwonk/bin/routercfgParent.pl > /dev/null
+
+## Process Configs of routers into network.ipvlanmap, network.staticmap
+21 6,12,19 * * *    networkuser /opt/netwonk/bin/routercfgproc.pl 37.cfg      >  /dev/null
+22 6,12,19 * * *    networkuser /opt/netwonk/bin/routercfgproc.pl 47.cfg      >  /dev/null
+20 6,12,19 * * *    networkuser /opt/netwonk/bin/routercfgproc.pl 30.cfg      >  /dev/null
+20 6,12,19 * * *    networkuser /opt/netwonk/bin/routercfgproc.pl 40.cfg      >  /dev/null
+
+##### ASR configs 
+52 10,18 * * *      networkuser /opt/netwonk/bin/asrconfigs.pl  >  /dev/null
+41 15    * * *      networkuser /opt/netwonk/bin/asrconfigs.pl  >  /dev/null
+
+### ASA arp,xlate data
+1,11,21,31,41,51  * * * *  networkuser /opt/netwonk/bin/fw-asaP.pl asa4140    >  /dev/null
+3,13,23,33,43,53  * * * *  networkuser /opt/netwonk/bin/fw-asaP.pl asastretch >  /dev/null
+4,14,24,34,44,54  * * * *  networkuser /opt/netwonk/bin/fw-asaP.pl asaimt     >  /dev/null
+5,15,25,35,45,55  * * * *  networkuser /opt/netwonk/bin/fw-asaP.pl asaead     >  /dev/null
+
+### get ASA configs and process them
+2  2,10,13,16,19    * * *  networkuser /opt/netwonk/bin/fw-asaconfig.pl    > /dev/null   
+28 6,12,19          * * *  networkuser /opt/netwonk/bin/fw-asacfgprocP.pl  > /dev/null
+
+## Palo Alto firewalls = wireless       
+*/10              * * * *  networkuser /opt/netwonk/bin/fw-PaC.pl 10.100.31.16  wireless arp    >  /dev/null
+*/10              * * * *  networkuser /opt/netwonk/bin/fw-PaC.pl 10.100.30.16  wireless arp    >  /dev/null
+8,18,28,38,48,58  * * * *  networkuser /opt/netwonk/bin/fw-PaC.pl 10.100.31.16  wireless xlate  >  /dev/null
+8,18,28,38,48,58  * * * *  networkuser /opt/netwonk/bin/fw-PaC.pl 10.100.30.16  wireless xlate  >  /dev/null
+
+### get Palo Alto configs
+9 0,19              * * *  networkuser /opt/netwonk/bin/fw-PAconfig.pl  > /dev/null                     
+
+## Rebuild the network.routes table
+0  6,18             * * *  networkuser /opt/netwonk/bin/routes.pl       > /dev/null
+
+#####  RTR  #####
+## rtrarp - grab arp data from router side of layer-3 switches
+1,16,31,46 * * * * networkuser /opt/netwonk/bin/rtrseeker.pl rtrarp       > /dev/null
+## rtrcfgsav - RTR config save
+48   11,23   * * * networkuser /opt/netwonk/bin/rtrseeker.pl rtrcfgsav    > /dev/null
+## rtrcfgproc - process rtr configs into tables - ipvlanmap, etc.
+12   0,12    * * * networkuser /opt/netwonk/bin/rtrseeker.pl rtrcfgproc   > /dev/null
+## rtrping.pl - child process of rtrseeker.pl - new 2021-01-29
+23   12,17   * * * networkuser /opt/netwonk/bin/rtrseeker.pl rtrping      > /dev/null
+
+##### SWITCH --- these include processing RTRs as switches within certain scripts
+## swmac.pl (switch.mac Child process of swseeker.pl) also creates ./forensic/<swname>.out for every switch processed (less often)
+11,41  * * * * networkuser /opt/netwonk/bin/swseeker.pl swmac               > /dev/null
+10,40  * * * * networkuser /opt/netwonk/bin/swmacstats.pl   > /dev/null  ## creates ./swmacstats.out - mac-based stats file; no ssh/telnet
+10,40  * * * * networkuser /opt/netwonk/bin/swportstats.pl > /dev/null  ## creates ./swportstats.out - port-based stats file; no ssh/telnet
+### swvlan.pl - Child process of swseeker.pl  into table switch.vlan
+23 14,20 * * * networkuser /opt/netwonk/bin/swseeker.pl swvlan      > /dev/null
+39 15 * * * networkuser /opt/netwonk/bin/swseeker.pl swvlan      > /dev/null
+## swping.pl  - into switch.ping
+3 12,16  * * * networkuser /opt/netwonk/bin/swseeker.pl swping      > /dev/null
+## swconfig - collects switch configs
+5  1     * * * networkuser /opt/netwonk/bin/swseeker.pl swconfig    > /dev/null
+## swcfgproc - process switch configs into switch.intcfg
+23 1     * * * networkuser /opt/netwonk/bin/swseeker.pl swcfgproc   > /dev/null
+## swmisc (switch.power, .inventory, .version, .boot, .inline  Child process of swseeker.pl)
+42 1     * * * networkuser /opt/netwonk/bin/swseeker.pl swmisc      > /dev/null
+## vgping - ping VGs and insert data into switch.vgping table
+0  2     * * * networkuser /opt/netwonk/bin/swseeker.pl vgping       > /dev/null      # calls swping.pl
+## swcdp - SWITCH & RTR CDP run - data into switch.cdp
+23 12    * * * networkuser /opt/netwonk/bin/swseeker.pl swcdp       >  /dev/null
+## Utility run checking swcdp data for Phone Moves
+52 1 * * *     networkuser /opt/netwonk/bin/swcdpPhoneMoves.pl      > /dev/null
+#27 15 * * *      networkuser /opt/netwonk/bin/swcdpPhoneMoves.pl      > /dev/null
+
+## swportreset
+*/10 * * * *   networkuser /opt/netwonk/bin/swportreset.pl Q           > /dev/null    ## processes network.swportresetQ
+30  14 * * 0   networkuser /opt/netwonk/bin/swportreset.pl weekly      > /dev/null    ## processes switch.errdis
+### forum_chvlan - processes all switch vlan changes in network.forum_chvlanQ  ** OFF BY DEFAULT **
+## */5  * * * *   networkuser /opt/netwonk/bin/forum_chvlan.pl Q       > /dev/null
+#
+
+
+##### SWMACFILTER
+## Run switch macfiltering on network.swmacfilterQ every 6 minutes
+*/6 * * * *   networkuser /opt/netwonk/bin/swmacfilter.pl Q         > /dev/null
+## swmacfilter-update.pl - processes switch config swmacfilter entries into network.swmacfilters
+33 1 * * *    networkuser /opt/netwonk/bin/swmacfilter-update.pl    > /dev/null
+
+##### MACFILTER
+## Run router macfiltering program on network.filterQ every 6 minutes
+*/6 * * * *   networkuser /opt/netwonk/bin/macfilter.pl filterQ  > /dev/null               
+## make sure macfilters agree on routers and db tables
+42 1 * * *    networkuser /opt/netwonk/bin/macfiltersifter.pl     >  /dev/null
+
+##### BORDERFILTER
+## Run border ip filtering program on network.filterQ every 6 minutes
+*/6 * * * *   networkuser /opt/netwonk/bin/borderfilter.pl Q      > /dev/null                      
+## make sure borderfilters agree on routers and db tables
+52 1 * * *    networkuser /opt/netwonk/bin/borderfiltersifter.pl  >  /dev/null
+
+##### ROVER
+## check network.macfilter* for filtered machines that are still running on the local vlan - insert these into network.swmacfilterQ for
+## automatic processing into network.swmacfilter*     This is done twice a month for now.
+2  2 1,15 * * networkuser /opt/netwonk/bin/rover.pl  >  /dev/null
+
+##### DHCP related
+## process dhcpd.conf, creates/updates network.fixies and range tables
+0 6,10,13,15,18,21 * * *  networkuser /opt/netwonk/bin/dhcpcfg.pl
+## vlanmap.pl -- builds network.vlanmap and network.vlansplits for all nets, plus network.ipvlanmap for Palo Altos only
+53 13              * * *  networkuser /opt/netwonk/bin/vlanmap.pl       > /dev/null   
+
+## DHCP NOTE = network.last_dhcp    - created by syslog-server:/etc/syslog-ng/scripts/world_ack.pl
+##           = network.last_nofree  - created by syslog-server:/etc/syslog-ng/scripts/world_nofree.pl
+##           = network.last_macflap - created by syslog-server:/etc/syslog-ng/scripts/world_macflap.pl
+
+##########################################################
+
