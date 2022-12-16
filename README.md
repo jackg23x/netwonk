@@ -3,7 +3,7 @@
 
 Netwonk is a network monitoring package for Cisco equipment. 
 It also supports some Palo Alto firewalls, and can be extended to other hardware.  
-It is written in Perl.
+It is written in Perl for linux/unix.
 The netwonk project includes a collection of scripts, the Netpeek web package, 
 and configuration for all databases and tables on an integrated mariadb/mysql server.
 It also includes code necessary for a syslog-ng server sending needed DHCP and macflap data to the database server.
