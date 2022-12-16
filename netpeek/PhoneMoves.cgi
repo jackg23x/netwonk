@@ -130,7 +130,7 @@ print <<EOF;
 <input type=\"submit\" value=\"Submit\" name=\"submit\" >   <br> <br>
 <hr>
 In case of problems with this page, send email to
-<em> <a HREF=\"mailto:$nuser\@$domain\"> the ACCC Network Group </a> </em> <br><hr>
+<em> <a HREF=\"mailto:$nuser\@$domain\"> the Network Group </a> </em> <br><hr>
 EOF
 
 return;
