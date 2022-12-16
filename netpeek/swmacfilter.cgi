@@ -110,8 +110,8 @@ sub no_web_access  {
 
   my $host = shift;
   print "Sorry to say, your host $host does not have access to this page<br><br>\n";
-  print "If you think this is in error, please contact ACCC Networking via email: <br><br>\n";
-  print "<em> <a HREF=\"mailto:$nuser\@$domain\"> Click to Email the ACCC Network Group </a> </em> <br>\n";
+  print "If you think this is in error, please contact Networking via email: <br><br>\n";
+  print "<em> <a HREF=\"mailto:$nuser\@$domain\"> Click to Email the Network Group </a> </em> <br>\n";
   print "Email address: <b> $nuser\@$domain </b> <br><br><hr>\n";
 }
 
@@ -161,7 +161,7 @@ Please be <font color=green><b>Careful</b></font>, this is not reversible
 
 <hr>
 In case of problems with this page, send email to
-<em> <a HREF=\"mailto:$nuser\@$domain\"> the ACCC Network Group </a> </em> <br><hr>
+<em> <a HREF=\"mailto:$nuser\@$domain\"> the Network Group </a> </em> <br><hr>
 
 EOF
 
