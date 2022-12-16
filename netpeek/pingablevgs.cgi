@@ -69,7 +69,7 @@ else {
   print "$s4 Note: Some of these may exist only as DNS entries. <br><br>\n";
 
   print "<hr><br>";
-  print "<a name=\"ping\"><b> Current pingable VGs on UIC networks </b></a><br><br>\n";
+  print "<a name=\"ping\"><b> Current pingable VGs on networks </b></a><br><br>\n";
   print "<table border = 5>";
   print " <th> VG name </th> <th> VG ip </th>"; 
   foreach my $sw (@swpings)  { 
@@ -80,7 +80,7 @@ else {
   print "</table> <br>";
 
   print "<hr><br>";
-  print "<a name=\"non\" ><b>Current NON-pingable VGs on UIC networks </b></a><br><br>\n";
+  print "<a name=\"non\" ><b>Current NON-pingable VGs on networks </b></a><br><br>\n";
   print "<table border=5> ";
   print "<th> VG IP  </th> <th> VG name </th>";
   foreach my $sw (@nopings)  {
