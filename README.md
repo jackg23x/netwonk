@@ -21,7 +21,7 @@ netpeek front page
 
 netpeek multi-ip search,
 where text can be typed in or pasted in from documents, problems logs, etc.
-![netpeek multi-ip search](https://user-images.githubusercontent.com/119876971/208184808-177dd295-7ce8-41a5-bc5a-f22f77a75ed8.jpg)
+![netpeek multi-ip search](https://user-images.githubusercontent.com/119876971/208487134-be29af0a-1b6a-404d-8d2c-b15cb21f0b4c.jpg)
 
 netpeek multi-mac search,
 where text can be typed in or pasted in from documents, problems logs, etc.
