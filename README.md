@@ -1,5 +1,5 @@
 # netwonk
-the netwonk network security data monitor with netpeek web code
+the netwonk network-security data monitor with netpeek web code
 
 Netwonk is a network security data package for admins running Cisco equipment. 
 It also supports some Palo Alto firewalls, and can be extended to other hardware.  
